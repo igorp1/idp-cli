@@ -1,0 +1,37 @@
+{
+  "name": "idp-cli",
+  "version": "1.0.0",
+  "description": "cli to generate projects ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "idp": "./index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igorp1/idp-cli.git"
+  },
+  "keywords": [
+    "CLI",
+    "frontend",
+    "web",
+    "angular",
+    "vue",
+    "react"
+  ],
+  "author": "idp",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/igorp1/idp-cli/issues"
+  },
+  "homepage": "https://github.com/igorp1/idp-cli#readme",
+  "dependencies": {
+    "cli-spinner": "^0.2.7",
+    "colors": "^1.1.2",
+    "commander": "^2.13.0",
+    "prompt": "^1.0.0",
+    "shelljs": "^0.8.1"
+  }
+}
