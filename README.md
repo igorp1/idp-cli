@@ -1,7 +1,8 @@
 # idp-cli
 🖥 cli to generate projects 
 
-
+# instalation 
+npm i idp-cli -g
 
 ## sample use
 

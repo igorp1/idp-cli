@@ -5,8 +5,10 @@ const fs = require('fs');
 const program = require('commander');           // http://tj.github.io/commander.js/
 const prompt = require('prompt');               // https://github.com/flatiron/prompt/tree/master/examples
 const colors = require("colors");               // https://github.com/Marak/colors.js
-const shell = require('shelljs');                 // https://github.com/shelljs/shelljs
 let Spinner = require('cli-spinner').Spinner;   // https://github.com/helloIAmPau/node-spinner
+
+const shell = require('shelljs');                 // https://github.com/shelljs/shelljs
+const { exec } = require('child_process');
 
 let Project = {};
 var spinner = {};
@@ -103,23 +105,32 @@ function processPromptInput(promptInput){
 
 function buildProject(framework){
     const config = loadConfig(framework);
-    fetchProjectSeed(config.seedName);
-    let filefixer = fixAFileFn(Project.name, Project.description);
-    costumizeSeed(config.filesToFix, filefixer); 
-    spinner.stop();
-    successMsg('DONE!\n');
-    printInstructions(config.instructions)
+    fetchProjectSeed(config.seedName, () =>{
+        let filefixer = fixAFileFn(Project.name, Project.description);
+        costumizeSeed(config.filesToFix, filefixer); 
+        spinner.stop();
+        successMsg('DONE!\n');
+        printInstructions(config.instructions)
+    });
 }
 
-function fetchProjectSeed(seedName){
+function fetchProjectSeed(seedName, processSeedFn){
     const urlPrefix = 'https://raw.githubusercontent.com/igorp1/idp-cli/master/seeds/'
     let script =  `
         curl ${urlPrefix}${seedName}.zip -o file.zip;
         unzip file.zip;
         rm file.zip
-        mv ${seedName} ${projectName};
+        mv ${seedName} ${Project.name};
     `;
-    shell.exec(script, {silent:false});
+    let child_process = exec(script, 
+        { stdio: ['pipe', 'pipe', 'ignore']},
+        (error, stdout, stderr) => {
+            if (error) { errorMsg(`exec error: ${error}`); spinner.stop(); }
+            else{
+                processSeedFn()
+            }
+        }
+    );
 }
 
 function costumizeSeed(filesTofix, fixingFunction){
