@@ -8,25 +8,30 @@ const colors = require("colors");               // https://github.com/Marak/colo
 const shell = require('shelljs');                 // https://github.com/shelljs/shelljs
 let Spinner = require('cli-spinner').Spinner;   // https://github.com/helloIAmPau/node-spinner
 
-let spinner = undefined;
 let Project = {};
+var spinner = {};
 
-// setup program commands
+// setup program 
+program
+    .version('1.1.0')
+    .description('Simple cli tool to create projects following templates.')
+    .usage('idp <command> [arguments] [options]')
+
 program
     .command('new [project_name]')
-    .description('To create a new project.')
-    .action((project_name) => { Project.name = project_name; });
+    .action((project_name) => { Project.name = project_name; })
 
-// setup program options
 program
     .option('-v, --vue',            'To create a Vue application.')
     .option('-a, --angular',       'To create an Angular application.')
     .option('-r, --react',          'To create a React application.')
     .option('-j, --javascript',    'To create a vanilla javascript application.')
+    .parse(process.argv);
 
-// parse arguments
-program.parse(process.argv);
-
+if (process.argv.length === 2) {
+    program.help();
+    return;
+}
 
 // setup console prompt schema
 var prompt_schema = { properties: { } };
@@ -67,7 +72,6 @@ else{
 
 } 
 
-
 // setup prompt
 prompt.message = "";
 prompt.delimiter = " " + colors.green.bold("$");
@@ -78,9 +82,7 @@ prompt.start();
 prompt.get(prompt_schema, 
     (err, result) => {
         if (err){
-            console.log("\n")
-            errorMsg("^C Ended")
-            console.log()
+            errorMsg("\nProgram ended.\n")
         }
         else{
             processPromptInput(result);
@@ -91,100 +93,37 @@ prompt.get(prompt_schema,
 function processPromptInput(promptInput){
     Project = Object.assign(Project, promptInput);
     console.log();
-    updateMsg('Building project...');
-    makeSpinner();
-    fetchTemplate(Project.framework);
-    stopSpinner();
+    spinner = new Spinner( 'Building project' + ' %s  '.green);
+    spinner.setSpinnerString('⣾⣽⣻⢿⡿⣟⣯⣷');
+    spinner.start();
+    buildProject(Project.framework);
 }
 
-function fetchTemplate(framework){
-    const calls = {
-        angular: ()=>{ getAngularTemplate();}, // ok!
-        javascript: ()=>{ getJSTemplate();}, // ok!
-        react: ()=>{ getReactTemplate();},
-        vue: ()=>{ getVueTemplate();}
-    }
-    calls[framework]();
-}
+// ===== PROJECT SEED BUILDERS ==>
 
-function getJSTemplate(){
-    makeSpinner();
-    unarchiveProjectSeed(Project.framework, Project.name);
+function buildProject(framework){
+    const config = loadConfig(framework);
+    fetchProjectSeed(config.seedName);
     let filefixer = fixAFileFn(Project.name, Project.description);
-    ['/index.html', '/package.json'].map( path => filefixer(path) );
-    stopSpinner();
+    costumizeSeed(config.filesToFix, filefixer); 
+    spinner.stop();
     successMsg('DONE!\n');
-    printInstructions(`
-Install packages: ${'npm i'.bold.cyan}
-Run project: ${'npm start'.bold.cyan}
-Build for production: ${'npm build'.bold.cyan}
-    `);
+    printInstructions(config.instructions)
 }
 
-function getAngularTemplate(){
-    makeSpinner();
-    unarchiveProjectSeed(Project.framework, Project.name);
-    let filefixer = fixAFileFn(Project.name, Project.description);
-    ['/.angular-cli.json',
-     '/package.json', 
-     '/src/index.html',
-     '/src/app/app.component.html'
-    ].map( path => filefixer(path) );
-    stopSpinner();
-    successMsg('DONE!\n');
-    printInstructions(`
-Install packages: ${'npm i'.bold.cyan}
-Run project: ${'ng serve'.bold.cyan}
-Build for production: ${'ng build --prod'.bold.cyan}
-    `);
-}
-
-function getReactTemplate(){
-    makeSpinner();
-    unarchiveProjectSeed(Project.framework, Project.name);
-    let filefixer = fixAFileFn(Project.name, Project.description);
-    ['/package.json', 
-     '/public/index.html',
-     '/src/App.js'
-    ].map( path => filefixer(path) );
-    stopSpinner();
-    successMsg('DONE!\n');
-    printInstructions(`
-Install packages: ${'npm i'.bold.cyan}
-Run project: ${'react-scripts start'.bold.cyan}
-Build for production: ${'react-scripts build'.bold.cyan}
-    `);
-}
-
-function getVueTemplate(){
-    makeSpinner();
-    unarchiveProjectSeed(Project.framework, Project.name);
-    let filefixer = fixAFileFn(Project.name, Project.description);
-    ['/package.json', 
-     '/index.html',
-     '/src/components/Home.vue'
-    ].map( path => filefixer(path) );
-    stopSpinner();
-    successMsg('DONE!\n');
-    printInstructions(`
-Install packages: ${'npm i'.bold.cyan}
-Run project: ${'npm run dev'.bold.cyan}
-Build for production: ${'npm run build'.bold.cyan}
-    `);
-}
-
-function unarchiveProjectSeed(framework, projectName, processFilesFn){
-    const seedNames = {
-        'angular':'ng-seed',
-        'javascript':'js-seed',
-        'react':'react-seed',
-        'vue':'vue-seed'
-    }
+function fetchProjectSeed(seedName){
+    const urlPrefix = 'https://raw.githubusercontent.com/igorp1/idp-cli/master/seeds/'
     let script =  `
-        unzip seeds/${seedNames[framework]}.zip;
-        mv ${seedNames[framework]} ${projectName};
+        curl ${urlPrefix}${seedName}.zip -o file.zip;
+        unzip file.zip;
+        rm file.zip
+        mv ${seedName} ${projectName};
     `;
-    return shell.exec(script, {silent:true}).code;
+    shell.exec(script, {silent:false});
+}
+
+function costumizeSeed(filesTofix, fixingFunction){
+    filesTofix.map( file => fixingFunction(file) );
 }
 
 function fixAFileFn(projectName, projectDescription){
@@ -203,16 +142,7 @@ function fixAFileFn(projectName, projectDescription){
     }
 }
 
-function makeSpinner(msg = 'building'){
-    if(spinner) spinner.stop();
-    spinner = new Spinner(msg + ' %s  '.green);
-    spinner.setSpinnerString('⣾⣽⣻⢿⡿⣟⣯⣷');
-    spinner.start()
-}
-
-function stopSpinner(){
-    spinner.stop();
-}   
+// ===== CONSOLE HELPERS
 
 function errorMsg(msg) {
     console.log("Error: ".underline.red + msg)
@@ -231,6 +161,52 @@ function printInstructions(msg){
     console.log(msg);
     console.log('========================'.cyan);
 }
+
+// ===== FRAMEWORKS CONFIG ==>
+
+function loadConfig(framework){
+    const allConfigs = {
+        angular: {
+            filesToFix: ['/.angular-cli.json', '/package.json', '/src/index.html', '/src/app/app.component.html'],
+            seedName: 'ng-seed',
+            instructions: `
+Install packages: ${'npm i'.bold.cyan}
+Run project: ${'ng serve'.bold.cyan}
+Build for production: ${'ng build --prod'.bold.cyan}
+    `
+        },
+        javascript: {
+            filesToFix: ['/index.html', '/package.json'],
+            seedName: 'js-seed',
+            instructions: `
+Install packages: ${'npm i'.bold.cyan}
+Run project: ${'npm start'.bold.cyan}
+Build for production: ${'npm build'.bold.cyan}
+    `
+        },
+        react: {
+            filesToFix: ['/package.json', '/public/index.html', '/src/App.js'],
+            seedName: 'react-seed',
+            instructions: `
+Install packages: ${'npm i'.bold.cyan}
+Run project: ${'react-scripts start'.bold.cyan}
+Build for production: ${'react-scripts build'.bold.cyan}
+    `
+        },
+        vue: {
+            filesToFix: ['/package.json', '/index.html', '/src/components/Home.vue'],
+            seedName: 'vue-seed',
+            instructions: `
+Install packages: ${'npm i'.bold.cyan}
+Run project: ${'npm run dev'.bold.cyan}
+Build for production: ${'npm run build'.bold.cyan}
+    `
+        },
+    };
+    return allConfigs[framework];
+}
+
+// ===== PROTOTYPE EXTENSIONS ==>
 
 String.prototype.replaceAll = function(search, replacement) {
     var target = this;
