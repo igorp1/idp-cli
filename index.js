@@ -2,13 +2,11 @@
 
 // libraries 
 const fs = require('fs');
+const { exec } = require('child_process');
 const program = require('commander');           // http://tj.github.io/commander.js/
 const prompt = require('prompt');               // https://github.com/flatiron/prompt/tree/master/examples
 const colors = require("colors");               // https://github.com/Marak/colors.js
 let Spinner = require('cli-spinner').Spinner;   // https://github.com/helloIAmPau/node-spinner
-
-const shell = require('shelljs');                 // https://github.com/shelljs/shelljs
-const { exec } = require('child_process');
 
 let Project = {};
 var spinner = {};
@@ -110,7 +108,8 @@ function buildProject(framework){
         costumizeSeed(config.filesToFix, filefixer); 
         spinner.stop();
         successMsg('DONE!\n');
-        printInstructions(config.instructions)
+        printInstructions(config.instructions);
+        printFunRandomLittleSomething();
     });
 }
 
@@ -173,6 +172,17 @@ function printInstructions(msg){
     console.log('========================'.cyan);
 }
 
+function printFunRandomLittleSomething(){
+    const randomThings = [
+        '\\ o_o /'.green,
+        '¯\\_(ツ)_/¯'.cyan,
+        '>> OoO <<'.magenta,
+        '@ __ @'.yellow,
+        '0.0'.red
+    ];
+    console.log(`\n${ randomThings.pickRandom() }\n`.bold);
+}
+
 // ===== FRAMEWORKS CONFIG ==>
 
 function loadConfig(framework){
@@ -223,3 +233,7 @@ String.prototype.replaceAll = function(search, replacement) {
     var target = this;
     return target.replace(new RegExp(search, 'g'), replacement);
 };
+
+Array.prototype.pickRandom = function() {
+    return this[Math.floor(Math.random() * this.length)];
+}
