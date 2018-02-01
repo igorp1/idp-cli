@@ -1,10 +1,12 @@
 # idp-cli
 🖥 cli to generate projects 
 
-# instalation 
+## Instalation 
+```
 npm i idp-cli -g
+```
 
-## sample use
+## Sample use
 
 ```
 idp new     // new project
@@ -14,8 +16,7 @@ idp new -j  // new Javascript project
 idp new -v  // new Vue project 
 ```
 
-
-## to start development
+## To start development
 ```
 npm i -g
 npm link
